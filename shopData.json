@@ -1,0 +1,30 @@
+{
+  "heavy": {
+    "name": "Heavy City",
+    "price": "75",
+    "stock": "31",
+    "extra": "",
+    "emoji": "<:HEAVY_1000:1540800612927545465>"
+  },
+  "sakura": {
+    "name": "Sakura Town",
+    "price": "90",
+    "stock": "10",
+    "extra": "",
+    "emoji": "<:Sakura_Newlogo:1540800644481552404>"
+  },
+  "we": {
+    "name": "We City",
+    "price": "105",
+    "stock": "6",
+    "extra": "",
+    "emoji": "<:wev2:1540800568480636949>"
+  },
+  "happy": {
+    "name": "Happy Community",
+    "price": "200",
+    "stock": "7",
+    "extra": "",
+    "emoji": "<:happy:1543559580729090048>"
+  }
+}
