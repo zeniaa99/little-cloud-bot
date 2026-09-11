@@ -56,10 +56,17 @@ function generateShopEmbed() {
     for (const [key, city] of Object.entries(shopData)) {
         const extraText = city.extra ? ` ${city.extra}` : '';
         const cityEmoji = city.emoji ? city.emoji : '📌'; 
-        const aliasText = city.alias ? ` *(พิมพ์ \`${city.alias}\`)*` : '';
         
-        description += `${cityEmoji} **${city.name}**${aliasText} เงินเขียว 1 M. \`${city.price} B.-\` พร้อมส่ง **${city.stock}m**${extraText}\n\n`;
+        description += `${cityEmoji} **${city.name}** เงินเขียว 1 M. \`${city.price} B.-\` พร้อมส่ง **${city.stock}m**${extraText}\n\n`;
     }
+    
+    if (description === '') description = '❌ ยังไม่มีข้อมูลเมือง พิมพ์ `!addcity` เพื่อเพิ่มเมืองครับ';
+    
+    return new EmbedBuilder()
+        .setTitle('🌈🐰 𝐋𝐢𝐭𝐭𝐥𝐞 𝐂𝐥𝐨𝐮𝐝 𝐒𝐡𝐨𝐩 🐰🌈')
+        .setDescription(description)
+        .setColor('#d2eaf9');
+}
     
     if (description === '') description = '❌ ยังไม่มีข้อมูลเมือง พิมพ์ `!addcity` เพื่อเพิ่มเมืองครับ';
     
