@@ -4,70 +4,66 @@ app.get('/', (req, res) => res.send('Little Cloud Shop Bot is Online!'));
 app.listen(process.env.PORT || 3000, () => console.log('Web server is ready!'));
 
 const { 
-    Client, 
-    GatewayIntentBits, 
-    EmbedBuilder, 
-    ActionRowBuilder, 
-    StringSelectMenuBuilder, 
-    ModalBuilder, 
-    TextInputBuilder, 
-    TextInputStyle, 
-    AttachmentBuilder,
-    ButtonBuilder,       
-    ButtonStyle          
+    Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, 
+    StringSelectMenuBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, 
+    AttachmentBuilder, ButtonBuilder, ButtonStyle          
 } = require('discord.js');
-const fs = require('fs'); 
+const mongoose = require('mongoose');
 require('dotenv').config();
 
 const client = new Client({
-    intents: [
-        GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent
-    ]
+    intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent]
 });
 
-// 📌 1. เบอร์พร้อมเพย์
 const PROMPTPAY_NUMBER = '0984637074'; 
-
-// 📌 2. ไอดีของยศ Customer
 const CUSTOMER_ROLE_ID = '1539220153345245235';
 
-// 📌 3. ฐานข้อมูลร้านค้า (เพิ่มฟิลด์ alias สำหรับตั้งคำสั่งย่อ)
-const dataPath = './shopData.json';
-let shopData = {};
+// 📌 ข้อมูลชุดล่าสุด (อิงตามรูปภาพที่ส่งมา)
+const latestData = {
+    heavy: { name: 'Heavy City', price: 70, stock: 12.5, extra: '', emoji: '<:HEAVY_1000:1540800612927545465>', alias: 'h' },
+    sakura: { name: 'Sakura Town', price: 80, stock: 9, extra: '', emoji: '<:Sakura_Newlogo:1540800644481552404>', alias: 's' },
+    we: { name: 'We City', price: 110, stock: 11, extra: '', emoji: '<:wev2:1540800568480636949>', alias: 'w' },
+    happy: { name: 'Happy Community', price: 120, stock: 10, extra: '', emoji: '<:happy:1543559580729090048>', alias: 'happy' },
+    jelly: { name: 'Jelly Town', price: 150, stock: 5, extra: '', emoji: '📌', alias: 'j' }
+};
 
-if (fs.existsSync(dataPath)) {
-    shopData = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
-} else {
-    shopData = { 
-        heavy: { name: 'Heavy City', price: 75, stock: 37, extra: '', emoji: '<:HEAVY_1000:1540800612927545465>', alias: 'h' },
-        sakura: { name: 'Sakura Town', price: 90, stock: 7, extra: '', emoji: '<:Sakura_Newlogo:1540800644481552404>', alias: 's' },
-        we: { name: 'We City', price: 115, stock: 2, extra: 'ชุดตี +1', emoji: '<:wev2:1540800568480636949>', alias: 'w' },
-        happy: { name: 'Happy Community', price: 200, stock: 6, extra: '', emoji: '<:happy:1543559580729090048>', alias: 'happy' }
-    };
-    saveShopData();
+// 📌 ตั้งค่า MongoDB Schema
+const shopSchema = new mongoose.Schema({ data: Object });
+const ShopDB = mongoose.model('ShopDB', shopSchema);
+let shopData = {};
+let dbDoc;
+
+// 📌 เชื่อมต่อ MongoDB
+mongoose.connect(process.env.MONGODB_URI).then(async () => {
+    console.log('Connected to MongoDB!');
+    dbDoc = await ShopDB.findOne();
+    if (!dbDoc) {
+        // ถ้าฐานข้อมูลว่างเปล่า ให้ใส่ข้อมูลล่าสุดเข้าไป
+        dbDoc = new ShopDB({ data: latestData });
+        await dbDoc.save();
+    }
+    shopData = dbDoc.data;
+}).catch(err => console.log(err));
+
+// 📌 ฟังก์ชันเซฟข้อมูลลง MongoDB
+async function saveShopData() {
+    if(dbDoc) {
+        dbDoc.data = shopData;
+        dbDoc.markModified('data');
+        await dbDoc.save();
+    }
 }
 
-function saveShopData() { fs.writeFileSync(dataPath, JSON.stringify(shopData, null, 2)); }
-
+// 📌 ฟังก์ชันสร้างบอร์ด (เอาคำว่า alias ออก เพื่อซ่อนตัวย่อ)
 function generateShopEmbed() {
     let description = '';
     for (const [key, city] of Object.entries(shopData)) {
         const extraText = city.extra ? ` ${city.extra}` : '';
         const cityEmoji = city.emoji ? city.emoji : '📌'; 
         
+        // ✨ สร้างข้อความโดยไม่มีคำว่า (พิมพ์ ...) แทรกลงไปแล้ว
         description += `${cityEmoji} **${city.name}** เงินเขียว 1 M. \`${city.price} B.-\` พร้อมส่ง **${city.stock}m**${extraText}\n\n`;
     }
-    
-    if (description === '') description = '❌ ยังไม่มีข้อมูลเมือง พิมพ์ `!addcity` เพื่อเพิ่มเมืองครับ';
-    
-    return new EmbedBuilder()
-        .setTitle('🌈🐰 𝐋𝐢𝐭𝐭𝐥𝐞 𝐂𝐥𝐨𝐮𝐝 𝐒𝐡𝐨𝐩 🐰🌈')
-        .setDescription(description)
-        .setColor('#d2eaf9');
-}
-    
     if (description === '') description = '❌ ยังไม่มีข้อมูลเมือง พิมพ์ `!addcity` เพื่อเพิ่มเมืองครับ';
     
     return new EmbedBuilder()
@@ -76,69 +72,50 @@ function generateShopEmbed() {
         .setColor('#d2eaf9');
 }
 
-// 📌 ฟังก์ชันตัวช่วยสำหรับส่งข้อมูลรายเมือง
 async function sendCityInfo(message, cityKey) {
     const city = shopData[cityKey];
     if (!city) return;
-    
     const extraText = city.extra ? ` ${city.extra}` : '';
     const cityEmoji = city.emoji ? city.emoji : '📌'; 
-    
-    const embed = new EmbedBuilder()
-        .setDescription(`${cityEmoji} **${city.name}** เงินเขียว 1 M. \`${city.price} B.-\` พร้อมส่ง **${city.stock}m**${extraText}`)
-        .setColor('#d2eaf9');
-    
+    const embed = new EmbedBuilder().setDescription(`${cityEmoji} **${city.name}** เงินเขียว 1 M. \`${city.price} B.-\` พร้อมส่ง **${city.stock}m**${extraText}`).setColor('#d2eaf9');
     await message.channel.send({ embeds: [embed] });
     await message.delete().catch(()=>{});
 }
 
-client.once('ready', () => {
-    console.log(`Logged in as ${client.user.tag}!`);
-});
+client.once('ready', () => console.log(`Logged in as ${client.user.tag}!`));
 
 client.on('messageCreate', async message => {
     if (message.author.bot) return;
-
     const msgText = message.content.toLowerCase().trim();
 
-    // ==========================================
-    // 📌 ระบบคำสั่งลัดรายเมือง (ดึงจาก alias อัตโนมัติ)
-    // ==========================================
+    // 📌 ดักจับตัวย่อ (เช่นพิมพ์ h, s, j)
     for (const [key, city] of Object.entries(shopData)) {
-        if (city.alias && msgText === city.alias.toLowerCase()) {
-            return sendCityInfo(message, key);
-        }
+        if (city.alias && msgText === city.alias.toLowerCase()) return sendCityInfo(message, key);
     }
 
-    // ==========================================
-    // 📌 คำสั่งหลักของระบบ
-    // ==========================================
+    // 📌 คำสั่งพิเศษ (แอดมิน): เอาไว้บังคับยัดข้อมูลชุดใหม่ลง MongoDB
+    if (message.content === '!syncdata') {
+        shopData = latestData; // เอาข้อมูลชุดล่าสุดด้านบนไปทับ
+        await saveShopData(); // บันทึกลงฐานข้อมูล
+        await message.channel.send('✅ **ซิงค์ฐานข้อมูล (MongoDB) อัปเดตราคา/สต็อกล่าสุดเรียบร้อยแล้ว!** พิมพ์ `!shop` เพื่อดูบอร์ดใหม่ได้เลยครับ');
+        await message.delete().catch(()=>{});
+        return;
+    }
+
     if (message.content === '!pay') {
-        const embed = new EmbedBuilder()
-            .setTitle('ชำระเงินผ่านระบบอัตโนมัติ')
-            .setDescription('**โอนผ่านทรูวอเล็ตบวกเพิ่ม 15 บาททุกกรณี!!**\n\n- ตรวจสอบยอดเงินให้ถูกต้อง')
-            .setImage('https://via.placeholder.com/600x300.png?text=PromptPay+Banner') 
-            .setColor('#ffb6c1');
-
+        const embed = new EmbedBuilder().setTitle('ชำระเงินผ่านระบบอัตโนมัติ').setDescription('**โอนผ่านทรูวอเล็ตบวกเพิ่ม 15 บาททุกกรณี!!**\n\n- ตรวจสอบยอดเงินให้ถูกต้อง').setImage('https://via.placeholder.com/600x300.png?text=PromptPay+Banner').setColor('#ffb6c1');
         const row = new ActionRowBuilder().addComponents(
-            new StringSelectMenuBuilder()
-                .setCustomId('payment_method')
-                .setPlaceholder('กรุณาเลือกช่องทางการชำระเงิน')
-                .addOptions([
-                    { label: 'PromptPay', description: 'ระบุจำนวนเงินเพื่อสร้าง QR Code พร้อมเพย์', value: 'promptpay_custom', emoji: '🪪' },
-                    { label: 'ยกเลิก / ล้างตัวเลือก', description: 'รีเซ็ตเมนูเพื่อกดเลือกใหม่', value: 'clear_selection', emoji: '❌' }
-                ])
+            new StringSelectMenuBuilder().setCustomId('payment_method').setPlaceholder('กรุณาเลือกช่องทางการชำระเงิน').addOptions([
+                { label: 'PromptPay', description: 'ระบุจำนวนเงินเพื่อสร้าง QR Code พร้อมเพย์', value: 'promptpay_custom', emoji: '🪪' },
+                { label: 'ยกเลิก / ล้างตัวเลือก', description: 'รีเซ็ตเมนูเพื่อกดเลือกใหม่', value: 'clear_selection', emoji: '❌' }
+            ])
         );
-
         await message.channel.send({ embeds: [embed], components: [row] });
         await message.delete().catch(() => {});
     }
 
     if (message.content === '!shop') {
-        await message.channel.send({ 
-            content: `<@&${CUSTOMER_ROLE_ID}>`, 
-            embeds: [generateShopEmbed()] 
-        });
+        await message.channel.send({ content: `<@&${CUSTOMER_ROLE_ID}>`, embeds: [generateShopEmbed()] });
         await message.delete().catch(()=>{});
     }
 
@@ -153,14 +130,11 @@ client.on('messageCreate', async message => {
     }
 
     if (message.content === '!addcity') {
-        const row = new ActionRowBuilder().addComponents(
-            new ButtonBuilder().setCustomId('btn_addcity').setLabel('เพิ่มเมืองใหม่').setStyle(ButtonStyle.Success).setEmoji('➕')
-        );
+        const row = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('btn_addcity').setLabel('เพิ่มเมืองใหม่').setStyle(ButtonStyle.Success).setEmoji('➕'));
         await message.channel.send({ content: 'คลิกปุ่มด้านล่างเพื่อเพิ่มข้อมูลเมืองใหม่ 👇', components: [row] });
         await message.delete().catch(()=>{});
     }
 
-    // 📌 คำสั่งใหม่: ลบเมืองที่ไม่ต้องการ (!delcity)
     if (message.content === '!delcity' || message.content === '!delete') {
         const options = Object.entries(shopData).map(([key, city]) => ({ label: city.name, value: key, emoji: '🗑️' }));
         if (options.length === 0) return message.channel.send('❌ ไม่มีเมืองให้ลบแล้วครับ');
@@ -173,7 +147,6 @@ client.on('messageCreate', async message => {
 });
 
 client.on('interactionCreate', async interaction => {
-    
     if (interaction.isButton()) {
         if (interaction.customId === 'btn_addcity') {
             const modal = new ModalBuilder().setCustomId('modal_addcity').setTitle('เพิ่มเมืองใหม่เข้าระบบ');
@@ -203,7 +176,6 @@ client.on('interactionCreate', async interaction => {
 
     else if (interaction.isStringSelectMenu()) {
         const selected = interaction.values[0];
-
         if (interaction.customId === 'payment_method') {
             if (selected === 'promptpay_custom') {
                 const modal = new ModalBuilder().setCustomId('promptpay_modal').setTitle('ระบุจำนวนเงินที่ต้องการชำระ');
@@ -233,22 +205,15 @@ client.on('interactionCreate', async interaction => {
             );
             await interaction.showModal(modal);
         }
-        // 📌 จัดการระบบลบเมือง
         else if (interaction.customId === 'select_city_delete') {
             const cityName = shopData[selected].name;
-            delete shopData[selected]; // ลบข้อมูลออกจากฐานข้อมูล
-            saveShopData(); // บันทึกไฟล์ทันที
-            
-            await interaction.update({ 
-                content: `🗑️ **ลบเมือง ${cityName} ออกจากระบบเรียบร้อยแล้ว!**`, 
-                embeds: [generateShopEmbed()], 
-                components: [] 
-            });
+            delete shopData[selected]; 
+            await saveShopData(); // บันทึกการลบลง DB
+            await interaction.update({ content: `🗑️ **ลบเมือง ${cityName} ออกจากระบบเรียบร้อยแล้ว!**`, embeds: [generateShopEmbed()], components: [] });
         }
     }
 
     else if (interaction.isModalSubmit()) {
-        
         if (interaction.customId === 'promptpay_modal') {
             const amount = interaction.fields.getTextInputValue('amount_input');
             if (isNaN(amount) || Number(amount) <= 0) { return await interaction.reply({ content: '❌ กรุณากรอกจำนวนเงินเป็นตัวเลขที่ถูกต้องเท่านั้น', ephemeral: true }); }
@@ -263,23 +228,19 @@ client.on('interactionCreate', async interaction => {
             if (interaction.isFromMessage()) { await interaction.update({ embeds: [payEmbed], files: [attachment], components: [buttonRow] }); } 
             else { await interaction.reply({ embeds: [payEmbed], files: [attachment], components: [buttonRow], ephemeral: true }); }
         }
-        
         else if (interaction.customId === 'modal_addcity') {
             const name = interaction.fields.getTextInputValue('in_name');
-            const price = interaction.fields.getTextInputValue('in_price');
-            const stock = interaction.fields.getTextInputValue('in_stock');
-            const emoji = interaction.fields.getTextInputValue('in_emoji') || '📌'; 
-            const alias = interaction.fields.getTextInputValue('in_alias') || ''; 
-
             const key = name.toLowerCase().replace(/\s+/g, '_');
-            shopData[key] = { name: name, price: price, stock: stock, extra: '', emoji: emoji, alias: alias };
-            saveShopData();
-
-            await interaction.update({ 
-                content: `✅ **เพิ่มเมืองใหม่เรียบร้อยแล้ว!**`, 
-                embeds: [generateShopEmbed()], 
-                components: [] 
-            });
+            shopData[key] = { 
+                name: name, 
+                price: interaction.fields.getTextInputValue('in_price'), 
+                stock: interaction.fields.getTextInputValue('in_stock'), 
+                extra: '', 
+                emoji: interaction.fields.getTextInputValue('in_emoji') || '📌', 
+                alias: interaction.fields.getTextInputValue('in_alias') || '' 
+            };
+            await saveShopData(); // บันทึกการเพิ่มลง DB
+            await interaction.update({ content: `✅ **เพิ่มเมืองใหม่เรียบร้อยแล้ว!**`, embeds: [generateShopEmbed()], components: [] });
         }
         else if (interaction.customId.startsWith('modal_update_')) {
             const key = interaction.customId.replace('modal_update_', '');
@@ -288,13 +249,8 @@ client.on('interactionCreate', async interaction => {
             shopData[key].extra = interaction.fields.getTextInputValue('in_extra') || '';
             shopData[key].emoji = interaction.fields.getTextInputValue('in_emoji') || '📌';
             shopData[key].alias = interaction.fields.getTextInputValue('in_alias') || '';
-            saveShopData();
-            
-            await interaction.update({ 
-                content: `<@&${CUSTOMER_ROLE_ID}>`, 
-                embeds: [generateShopEmbed()], 
-                components: [] 
-            });
+            await saveShopData(); // บันทึกการอัปเดตลง DB
+            await interaction.update({ content: `<@&${CUSTOMER_ROLE_ID}>`, embeds: [generateShopEmbed()], components: [] });
         }
     }
 });
