@@ -105,7 +105,7 @@ client.on('messageCreate', async message => {
     // ==========================================
     // 📌 ระบบเปิด-ปิดร้าน (อัปเดตใหม่)
     // ==========================================
-    if (message.content === '!open') {
+    if (message.content === '!เปิด') {
         await message.channel.setName('꒰-🟢-꒱-ㆍ-open').catch(err => console.log('Error renaming:', err));
         const openEmbed = new EmbedBuilder()
             .setColor('#00ff00')
@@ -114,7 +114,7 @@ client.on('messageCreate', async message => {
         await message.delete().catch(()=>{});
     }
 
-    if (message.content === '!close') {
+    if (message.content === '!ปิด') {
         await message.channel.setName('꒰-🔴-꒱-ㆍ-closed').catch(err => console.log('Error renaming:', err));
         const closeEmbed = new EmbedBuilder()
             .setColor('#2b2d31')
