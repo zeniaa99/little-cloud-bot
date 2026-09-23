@@ -102,6 +102,27 @@ client.on('messageCreate', async message => {
         return;
     }
 
+    // ==========================================
+    // 📌 ระบบเปิด-ปิดร้าน (อัปเดตใหม่)
+    // ==========================================
+    if (message.content === '!open') {
+        await message.channel.setName('꒰-🟢-꒱-ㆍ-open').catch(err => console.log('Error renaming:', err));
+        const openEmbed = new EmbedBuilder()
+            .setColor('#00ff00')
+            .setDescription(`>  <a:Green_Alert:1545840280492711937>  ‹ **NOW OPEN** › <a:rainbow_bunnystore:1539254169360142396> \n> **ร้านเปิดให้บริการรับออเดอร์แล้วนะคั้บ !**\n\n🐾 น้องเมฆพร้อมดูแลและรับออเดอร์แล้วคั้บผม ~\nใครสนใจสินค้าหรืออยากสอบถามข้อมูล สามารถกดเปิด Ticket ได้เลยน้า <a:64:1539254175920291940>  ₊˚⊹\n\n╭・✦ ──── ꒰ 🛒 ꒱ ──── ✦・╮\n┊ 🏷️ **สั่งซื้อ / สอบถาม :** <#1539220154326454272>\n┊\n┊ ⏰ **เวลาทำการ :** 14:00 - 02:00 น.\n╰・✦ ────────────── ✦・╯\n\n*( <a:emoji_67:1539254183562051585>  ทักแชทเปิดตั๋วทิ้งไว้ได้เลย แอดมินจะรีบตอบกลับให้ไวที่สุดงับ 𐙚 ⋆.˚ )*`);
+        await message.channel.send({ content: `<@&${CUSTOMER_ROLE_ID}>`, embeds: [openEmbed] });
+        await message.delete().catch(()=>{});
+    }
+
+    if (message.content === '!close') {
+        await message.channel.setName('꒰-🔴-꒱-ㆍ-closed').catch(err => console.log('Error renaming:', err));
+        const closeEmbed = new EmbedBuilder()
+            .setColor('#2b2d31')
+            .setDescription(`>  <a:Alert_siren_light_warning_red:1545840302311604317> ‹ **NOW CLOSED** › <a:rainbow_bunnystore:1539254169360142396> \n> **ร้านปิดรอบดึกแล้วนะคั้บ ૮₍ ˶•⤙•˶ ₎ა**\n\n🧸 แอดมินขอตัวไปพักผ่อนชาร์จพลังก่อนน้า zZz\nคุณลูกค้ายังสามารถกดเปิด Ticket สั่งซื้อหรือทิ้งข้อความไว้ได้ตลอด 24 ชม. ตื่นแล้วจะรีบมาตอบทันทีคั้บ <a:64:1539254175920291940> ₊˚⊹\n\n╭・✦ ──── ꒰ 🛒 ꒱ ──── ✦・╮\n┊ 🏷️ **ทิ้งข้อความไว้ที่ :** <#1539220154326454272>\n┊\n┊ ⏰ **เปิดรับออเดอร์อีกครั้ง :** 14:00 น.\n╰・✦ ────────────── ✦・╯\n\n*( <a:emoji_67:1539254183562051585> ทักแชทเปิดตั๋วทิ้งไว้ได้เลย แอดมินจะรีบทยอยตอบกลับให้ไวที่สุดงับ 𐙚 ⋆.˚ )*`);
+        await message.channel.send({ content: `<@&${CUSTOMER_ROLE_ID}>`, embeds: [closeEmbed] });
+        await message.delete().catch(()=>{});
+    }
+
     if (message.content === '!pay') {
         const embed = new EmbedBuilder().setTitle('ชำระเงินผ่านระบบอัตโนมัติ').setDescription('**โอนผ่านทรูวอเล็ตบวกเพิ่ม 15 บาททุกกรณี!!**\n\n- ตรวจสอบยอดเงินให้ถูกต้อง').setImage('https://via.placeholder.com/600x300.png?text=PromptPay+Banner').setColor('#ffb6c1');
         const row = new ActionRowBuilder().addComponents(
