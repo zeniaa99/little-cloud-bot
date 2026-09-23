@@ -114,7 +114,7 @@ client.on('messageCreate', async message => {
         await message.delete().catch(()=>{});
     }
 
-    if (message.content === '!closed') {
+    if (message.content === '!close') {
         await message.channel.setName('꒰-🔴-꒱-ㆍ-closed').catch(err => console.log('Error renaming:', err));
         const closeEmbed = new EmbedBuilder()
             .setColor('#2b2d31')
